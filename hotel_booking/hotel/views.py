@@ -1,11 +1,10 @@
-# core/views.py
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from .models import Hotel, Review, FinanceReport
-from .serializers import HotelSerializer, ReviewSerializer, FinanceReportSerializer
+from .models import Hotel, Review, FinanceReport, Room, Booking
+from .serializers import HotelSerializer, ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer
 from .permissions import IsSystemAdmin, IsHotelAdmin
 
 class HotelViewSet(viewsets.ModelViewSet):
@@ -58,3 +57,39 @@ class FinanceReportViewSet(viewsets.ModelViewSet):
         if self.request.user.is_staff:
             return FinanceReport.objects.all()
         return FinanceReport.objects.filter(hotel__admin=self.request.user)
+
+class RoomViewSet(viewsets.ModelViewSet):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
+    permission_classes = [IsAuthenticated]
+
+class BookingViewSet(viewsets.ModelViewSet):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Booking.objects.all()
+        return Booking.objects.filter(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def pay(self, request, pk=None):
+        booking = self.get_object()
+        payment_amount = request.data.get('payment_amount')
+        if payment_amount and float(payment_amount) >= booking.room.category.price:
+            booking.payment_status = 'paid'
+            booking.save()
+            return Response({'status': 'payment successful'})
+        else:
+            return Response({'status': 'insufficient payment amount'}, status=400)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        booking = self.get_object()
+        if booking.payment_status == 'reserved' and booking.user == request.user:
+            booking.payment_status = 'cancelled'
+            booking.save()
+            return Response({'status': 'reservation cancelled'})
+        else:
+            return Response({'status': 'cancellation not allowed'}, status=400)
