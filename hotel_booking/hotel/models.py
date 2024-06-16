@@ -1,7 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractBaseUser,PermissionsMixin
 from django.utils import timezone
-
+from django.utils.translation import gettext_lazy as _
+from .manager import UserManager
 class Hotel(models.Model):
     name = models.CharField(max_length=255)
     address = models.TextField()
@@ -38,7 +39,7 @@ class Booking(models.Model):
     check_out = models.DateField()
     payment_status = models.CharField(max_length=10, choices=payment_status, default='reserved')
     is_checked_out = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField()
 
     def __str__(self):
         return f"{self.user.username} - {self.room.hotel.name} - {self.room.category.name}"
@@ -62,3 +63,35 @@ class FinanceReport(models.Model):
 
     def __str__(self):
         return f'Finance report for {self.hotel.name}'
+
+class User(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(verbose_name=_('email address'), unique=True)
+    first_name = models.CharField(verbose_name=_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(verbose_name=_('last name'), max_length=30, blank=True)
+    is_staff = models.BooleanField(_('staff status'), default=False)
+    is_active = models.BooleanField(_('active'), default=True)
+    is_verified = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+    last_login = models.DateTimeField(auto_now=true)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name']
+    
+    objects = UserManager()
+
+    def __str__(self):
+        return self.email
+    
+    @property
+    def get_full_name(self):
+        full_name = f'{self.first_name} {self.last_name}'
+        return full_name.strip()
+    def tokens(self):
+        pass
+
+class OneTimePassword(models.Model):
+    user= models.OneToOneField(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6, unique=True)
+
+    def __str__(self):
+        return f"{self.user.first_name} -passcode"

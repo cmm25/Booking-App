@@ -1,11 +1,14 @@
 from rest_framework import viewsets
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from rest_framework.generics import GenericAPIView
 from .models import Hotel, Review, FinanceReport, Room, Booking
-from .serializers import HotelSerializer, ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer
+from .serializers import HotelSerializer,UserRegistrationSerializer, ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer
 from .permissions import IsSystemAdmin, IsHotelAdmin
+from .utils import sendOtpEmail
 
 class HotelViewSet(viewsets.ModelViewSet):
     queryset = Hotel.objects.all()
@@ -93,3 +96,19 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response({'status': 'reservation cancelled'})
         else:
             return Response({'status': 'cancellation not allowed'}, status=400)
+
+class RegisterUserView(GenericAPIView):
+    serializer_class = UserRegistrationSerializer
+
+    def post(self, request):
+        user_data = request.data
+        serializer = self.serializer_class(data=user_data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            user = serializer.data
+            sendOtpEmail(user['email'])
+            print(user)
+            return Response({'data': user,
+                             'message': f'Hello {user.first_name} thank you for signing up
+                              the passcode is '}, status= status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
