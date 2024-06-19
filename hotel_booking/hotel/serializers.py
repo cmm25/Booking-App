@@ -2,12 +2,14 @@ from rest_framework import serializers
 from .models import User, Hotel, Review, FinanceReport, Room, Booking, RoomCategory
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import authenticate
+from django.conf import settings
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.urls import reverse
-from .utils import send_email
+from .utils import send_email, Google, register_social_user
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 class HotelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -148,3 +150,41 @@ class SetNewPasswordSerializer(serializers.ModelSerializer):
             return user
         except Exception as e:  
             raise AuthenticationFailed('The reset link is invalid', 401)
+        
+
+class LogoutUserSerializer(serializers.ModelSerializer):
+    refresh_token = serializers.CharField()
+    default_error_message ={
+        'bad_token': ('Token is invalid or expired')
+    }
+
+    def validate(self, attrs):
+        self.token = attrs.get('refresh_token')
+        return attrs
+    def save(self, **kwargs):
+        try:
+            token = RefreshToken(self.token)
+            token.blacklist()
+        except TokenError:
+            return self.fail('bad_token')
+        
+
+class GoogleSignInSerializer(serializers.Serializer):
+    access_token = serializers.CharField(min_length = 6)
+
+    def validate_access_token(self,access_token):
+        google_user_data = Google.validate_google_token(access_token)
+        try:
+            user_id = google_user_data['sub']
+
+        except:
+            raise serializers.ValidationError("Invalid Token")
+        
+        if google_user_data['aud'] != settings.GOOGLE_CLIENT_ID:
+            raise serializers.ValidationError(detail= 'Invalid client ID')
+        email = google_user_data['email']
+        first_name = google_user_data['given_name']
+        last_name = google_user_data['family_name']
+        provider = 'google'
+        
+        return register_social_user(provider, email, first_name, last_name)

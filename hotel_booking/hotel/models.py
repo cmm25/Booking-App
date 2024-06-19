@@ -6,11 +6,15 @@ from django.utils.translation import gettext_lazy as _
 from .manager import UserManager
 from rest_framework_simplejwt.tokens import RefreshToken
 
+AUTH_PROVIDERS = {'email': 'email', 'google': 'google'}
+
 class Hotel(models.Model):
     name = models.CharField(max_length=255)
     address = models.TextField()
     is_approved = models.BooleanField(default=False)
     admin = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hotel')
+    image = models.ImageField(upload_to='hotel_images/', null=True, blank=True)
+    video = models.FileField(upload_to='hotel_videos/', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -26,6 +30,8 @@ class Room(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='rooms')
     category = models.ForeignKey(RoomCategory, on_delete=models.CASCADE, related_name='rooms')
     number = models.CharField(max_length=10)
+    image = models.ImageField(upload_to='room_images/', null=True, blank=True)
+    video = models.FileField(upload_to='room_videos/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.hotel.name} - {self.number} - {self.category.name}"
@@ -76,6 +82,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
     last_login = models.DateTimeField(auto_now=True)
+    auth_provider = models.CharField(max_length=50, default=AUTH_PROVIDERS.get('email'))
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
@@ -89,6 +96,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_full_name(self):
         full_name = f'{self.first_name} {self.last_name}'
         return full_name.strip()
+    
     def tokens(self):
         refresh = RefreshToken.for_user(self)
         return {
@@ -97,7 +105,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         }
 
 class OneTimePassword(models.Model):
-    user= models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     code = models.CharField(max_length=6, unique=True)
 
     def __str__(self):

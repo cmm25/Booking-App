@@ -1,5 +1,4 @@
-from rest_framework import viewsets
-from rest_framework import status
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -14,25 +13,33 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
+from .models import Hotel, Review, FinanceReport, Room, Booking, User, OneTimePassword
+from .serializers import (
+    GoogleSignInSerializer, PasswordResetSerializer, LogoutUserSerializer,
+    SetNewPasswordSerializer, HotelSerializer, UserRegistrationSerializer,
+    ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer,
+    LoginSerializer
+)
+from .permissions import IsSystemAdmin, IsHotelAdmin
+from .utils import sendOtpEmail
+
 class HotelViewSet(viewsets.ModelViewSet):
     queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsSystemAdmin()]
-        if self.action in ['approve', 'decline']:
-            return [IsSystemAdmin()]
+            return [IsHotelAdmin()]
         return [IsAuthenticated()]
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsSystemAdmin])
     def approve(self, request, pk=None):
         hotel = self.get_object()
         hotel.is_approved = True
         hotel.save()
         return Response({'status': 'hotel approved'})
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsSystemAdmin])
     def decline(self, request, pk=None):
         hotel = self.get_object()
         hotel.is_approved = False
@@ -44,11 +51,19 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
 
-    @action(detail=True, methods=['post'], permission_classes=[IsHotelAdmin])
+    def get_queryset(self):
+        if self.request.user.is_hotel_admin:
+            return Review.objects.filter(hotel__admin=self.request.user)
+        elif self.request.user.is_client:
+            return Review.objects.filter(user=self.request.user)
+        else:
+            return Review.objects.none()
+
+    @action(detail=True, methods=['post'])
     def respond(self, request, pk=None):
         review = self.get_object()
-        if review.hotel.admin != request.user:
-            return Response({'status': 'not authorized'}, status=403)
+        if request.user.is_hotel_admin and review.hotel.admin != request.user:
+            return Response({'status': 'not authorized'}, status=status.HTTP_403_FORBIDDEN)
         response_text = request.data.get('response', '')
         review.response = response_text
         review.responded_at = timezone.now()
@@ -61,9 +76,30 @@ class FinanceReportViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if self.request.user.is_staff:
-            return FinanceReport.objects.all()
-        return FinanceReport.objects.filter(hotel__admin=self.request.user)
+        if self.request.user.is_hotel_admin:
+            hotel = self.request.user.hotel
+            return FinanceReport.objects.filter(hotel=hotel)
+        else:
+            return FinanceReport.objects.none()
+
+    @action(detail=False, methods=['get'])
+    def filter_by_year_month(self, request):
+        if not self.request.user.is_hotel_admin:
+            return Response({'detail': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        hotel = self.request.user.hotel
+        year = request.query_params.get('year')
+        month = request.query_params.get('month')
+
+        queryset = FinanceReport.objects.filter(hotel=hotel)
+
+        if year:
+            queryset = queryset.filter(created_at__year=year)
+        if month:
+            queryset = queryset.filter(created_at__month=month)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
@@ -87,9 +123,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         if payment_amount and float(payment_amount) >= booking.room.category.price:
             booking.payment_status = 'paid'
             booking.save()
-            return Response({'status': 'payment successful'})
-        else:
-            return Response({'status': 'insufficient payment amount'}, status=400)
+            return Response({'status': 'payment successful'}, status=status.HTTP_200_OK)
+        return Response({'status': 'insufficient payment amount'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
@@ -97,52 +132,44 @@ class BookingViewSet(viewsets.ModelViewSet):
         if booking.payment_status == 'reserved' and booking.user == request.user:
             booking.payment_status = 'cancelled'
             booking.save()
-            return Response({'status': 'reservation cancelled'})
-        else:
-            return Response({'status': 'cancellation not allowed'}, status=400)
+            return Response({'status': 'reservation cancelled'}, status=status.HTTP_200_OK)
+        return Response({'status': 'cancellation not allowed'}, status=status.HTTP_400_BAD_REQUEST)
 
 class RegisterUserView(GenericAPIView):
     serializer_class = UserRegistrationSerializer
 
     def post(self, request):
-        user_data = request.data
-        serializer = self.serializer_class(data=user_data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             user_instance = serializer.save()
-            user = serializer.data
-            sendOtpEmail(user['email'])
-            print(user)
+            sendOtpEmail(user_instance.email)
             return Response({
-                'data': user,
-                'message': f"Hello {user_instance.first_name}, thank you for signing up. The passcode is {user_instance.passcode}"  # assuming 'passcode' is an attribute of user_instance
+                'data': serializer.data,
+                'message': f"Hello {user_instance.first_name}, thank you for signing up. The passcode is {user_instance.passcode}"
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class VerifyUserEmail(GenericAPIView):
     def post(self, request):
-        otpcode= request.data.get('otp')
+        otp_code = request.data.get('otp')
         try:
-            user_code=OneTimePassword.objects.get(code = otpcode)
-            user= user_code.user
+            user_code = OneTimePassword.objects.get(code=otp_code)
+            user = user_code.user
             if not user.is_verified:
-                user.is_verified=True
+                user.is_verified = True
                 user.save()
-                return Response({'status': 'Email verified successfully'}, status= status.HTTP_200_OK)
-            else:
-                return Response({'status': 'Email already verified'}, status= status.HTTP_204_NO_CONTENT)
+                return Response({'status': 'Email verified successfully'}, status=status.HTTP_200_OK)
+            return Response({'status': 'Email already verified'}, status=status.HTTP_204_NO_CONTENT)
         except OneTimePassword.DoesNotExist:
-            return Response({'status': 'Passcode not provided'}, status= status.HTTP_404_NOT_FOUND)
-        
-
+            return Response({'status': 'Passcode not provided'}, status=status.HTTP_404_NOT_FOUND)
 
 class LoginUserView(GenericAPIView):
-    serializer_class= LoginSerializer
+    serializer_class = LoginSerializer
 
-    def post(self,request):
-        serializer=self.serializer_class(data=request.data, context={'request': request})
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        return Response(serializer.data, status= status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class TestAuthenticationView(GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -152,28 +179,27 @@ class TestAuthenticationView(GenericAPIView):
 
 class PasswordResetRequest(GenericAPIView):
     serializer_class = PasswordResetSerializer
-    def post(self, request):
-        serializer = self.serializer_class(data = request.data, context={'request':request})
-        serializer.is_valid(raise_exception=True)
-        return Response ({'message':' A link has been sent to reset your password'}, status= status.HTTP_200_OK)
 
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        return Response({'message': 'A link has been sent to reset your password'}, status=status.HTTP_200_OK)
 
 class PasswordResetConfirm(GenericAPIView):
     def get(self, request, uidb64, token):
         try:
             user_id = smart_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(id = user_id)
+            user = User.objects.get(id=user_id)
             if not PasswordResetTokenGenerator().check_token(user, token):
-                return Response({'error':'Token is not valid, please request a new one'}, status= status.HTTP_401_UNAUTHORIZED)
-            return Response({'success':True, 'message':'Token is valid','uidb64':uidb64, 'token':token}, status= status.HTTP_200_OK)
-
+                return Response({'error': 'Token is not valid, please request a new one'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'success': True, 'message': 'Token is valid', 'uidb64': uidb64, 'token': token}, status=status.HTTP_200_OK)
         except DjangoUnicodeDecodeError:
-            return Response({'error':'Token is not valid, please request a new one'}, status= status.HTTP_401_UNAUTHORIZED)
-        
+            return Response({'error': 'Token is not valid, please request a new one'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class SetNewPassword(GenericAPIView):
     serializer_class = SetNewPasswordSerializer
-    def patch(self,request):
-        serializer =self.serializer_class(data = request.data)
+
+    def patch(self, request):
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response ({'message': "Password has been reset successfully"}, status = status.HTTP_200_OK)
+        return Response({'message': 'Password has been reset successfully'}, status=status.HTTP_200_OK)
