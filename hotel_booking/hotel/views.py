@@ -145,7 +145,7 @@ class RegisterUserView(GenericAPIView):
             sendOtpEmail(user_instance.email)
             return Response({
                 'data': serializer.data,
-                'message': f"Hello {user_instance.first_name}, thank you for signing up. The passcode is {user_instance.passcode}"
+                'message': f"Hello {user_instance.first_name}, thank you for signing up. The passcode is {user_instance.password}"
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -203,3 +203,23 @@ class SetNewPassword(GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({'message': 'Password has been reset successfully'}, status=status.HTTP_200_OK)
+
+class GoogleSignInView(GenericAPIView):
+    serializer_class = GoogleSignInSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data['access_token']
+        return Response(data, status=status.HTTP_200_OK)
+    
+
+class LogoutUserView(GenericAPIView):
+    serializer_class = LogoutUserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
