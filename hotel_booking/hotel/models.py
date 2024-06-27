@@ -7,6 +7,11 @@ from .manager import UserManager
 from rest_framework_simplejwt.tokens import RefreshToken
 
 AUTH_PROVIDERS = {'email': 'email', 'google': 'google'}
+ROLE_CHOICES = [
+    ('client', 'Client'),
+    ('hotel_admin', 'Hotel Admin'),
+    ('system_admin', 'System Admin'),
+]
 
 class Hotel(models.Model):
     name = models.CharField(max_length=255)
@@ -77,6 +82,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(verbose_name=_('email address'), unique=True)
     first_name = models.CharField(verbose_name=_('first name'), max_length=30, blank=True)
     last_name = models.CharField(verbose_name=_('last name'), max_length=30, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='client')
     is_staff = models.BooleanField(_('staff status'), default=False)
     is_active = models.BooleanField(_('active'), default=True)
     is_verified = models.BooleanField(default=False)
@@ -85,7 +91,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     auth_provider = models.CharField(max_length=50, default=AUTH_PROVIDERS.get('email'))
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'role']
     
     objects = UserManager()
 
@@ -103,7 +109,6 @@ class User(AbstractBaseUser, PermissionsMixin):
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
-
 class OneTimePassword(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     code = models.CharField(max_length=6, unique=True)

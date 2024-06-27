@@ -44,10 +44,11 @@ class BookingSerializer(serializers.ModelSerializer):
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
     password2 = serializers.CharField(max_length=68, min_length=6, write_only=True)
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='client')
 
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'password', 'password2']
+        fields = ['email', 'first_name', 'last_name', 'password', 'password2', 'role']
     
     def validate(self, attrs):
         password = attrs.get('password', '')
@@ -61,22 +62,21 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             first_name=validated_data.get('first_name'),
             last_name=validated_data.get('last_name'),
-            password=validated_data.get('password')
+            password=validated_data.get('password'),
+            role=validated_data.get('role')
         )
-
-        return user
-
-    
+        return user   
 class LoginSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=255, min_length =6)
+    email = serializers.EmailField(max_length=255, min_length=6)
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
-    full_name = serializers.CharField(max_length = 255, read_only =True)
+    full_name = serializers.CharField(max_length=255, read_only=True)
+    role = serializers.CharField(max_length=20, read_only=True)
     access_token = serializers.CharField(max_length=255, read_only=True)
     refresh_token = serializers.CharField(max_length=255, read_only=True)
 
     class Meta:
         model = User
-        fields = ['email','password','full_name','access_token','refresh_token']
+        fields = ['email', 'password', 'full_name', 'role', 'access_token', 'refresh_token']
 
     def validate(self, attrs):
         email = attrs.get('email')
@@ -93,9 +93,11 @@ class LoginSerializer(serializers.ModelSerializer):
         return {
             'email': user.email,
             'full_name': user.get_full_name(),
-            'access_token':str( user_tokens.get('access')),
+            'role': user.role,
+            'access_token': str(user_tokens.get('access')),
             'refresh_token': str(user_tokens.get('refresh'))
         }
+
 
 class PasswordResetSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255, min_length=6)
