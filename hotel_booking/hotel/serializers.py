@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Hotel, Review, FinanceReport, Room, Booking, RoomCategory
+from .models import User, Hotel, Review, FinanceReport, Room, Booking, RoomCategory, ROLE_CHOICES
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import authenticate
 from django.conf import settings
@@ -44,7 +44,7 @@ class BookingSerializer(serializers.ModelSerializer):
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
     password2 = serializers.CharField(max_length=68, min_length=6, write_only=True)
-    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, default='client')
+    role = serializers.ChoiceField(choices=ROLE_CHOICES, default='client')
 
     class Meta:
         model = User
@@ -65,7 +65,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             password=validated_data.get('password'),
             role=validated_data.get('role')
         )
-        return user   
+        return user
 class LoginSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255, min_length=6)
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
@@ -73,32 +73,33 @@ class LoginSerializer(serializers.ModelSerializer):
     role = serializers.CharField(max_length=20, read_only=True)
     access_token = serializers.CharField(max_length=255, read_only=True)
     refresh_token = serializers.CharField(max_length=255, read_only=True)
+    message = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'full_name', 'role', 'access_token', 'refresh_token']
+        fields = ['email', 'password', 'full_name', 'role', 'access_token', 'refresh_token', 'message']
 
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
         request = self.context.get('request')
 
-        user = authenticate(email=email, password=password)
+        user = authenticate(request=request, email=email, password=password)
         if not user:
             raise AuthenticationFailed('Invalid credentials, try again')
         if not user.is_verified:
             raise AuthenticationFailed('Account is not verified')
+
+        # Assuming tokens() returns a dictionary with access and refresh tokens
         user_tokens = user.tokens()
 
         return {
             'email': user.email,
-            'full_name': user.get_full_name(),
-            'role': user.role,
-            'access_token': str(user_tokens.get('access')),
-            'refresh_token': str(user_tokens.get('refresh'))
+            'full_name': user.get_full_name,  # Correctly calling get_full_name()
+            'role': user.role,  # Accessing role directly from the user instance
+            'access_token': str(user_tokens.get('access')),  # Convert to string if necessary
+            'refresh_token': str(user_tokens.get('refresh')),  # Convert to string if necessary
         }
-
-
 class PasswordResetSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255, min_length=6)
 
@@ -122,7 +123,7 @@ class PasswordResetSerializer(serializers.ModelSerializer):
                 'email_body': email_message,
                 'to_email': user.email,
                 'email_subject': 'Reset your password'
-           }
+    }
            send_email(data)
         return super().validate(attrs)
     

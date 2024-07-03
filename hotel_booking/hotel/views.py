@@ -169,7 +169,15 @@ class LoginUserView(GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # Extract relevant data from serializer.validated_data
+        response_data = {
+            "email": serializer.validated_data['email'],
+            "full_name": serializer.validated_data['full_name'],
+            "role": serializer.validated_data['role']
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
 class TestAuthenticationView(GenericAPIView):
     permission_classes = [IsAuthenticated]

@@ -1,4 +1,4 @@
-from django.contrib.auth.models import  BaseUserManager
+from django.contrib.auth.models import BaseUserManager
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import validate_email
@@ -10,9 +10,9 @@ class UserManager(BaseUserManager):
         except ValidationError:
             raise ValueError(_('Invalid email address'))
         
-    def create_user(self, email,first_name, last_name, password, **extra_fields):
+    def create_user(self, email, first_name, last_name, password, **extra_fields):
         if email:
-            email=self.normalize_email(email)
+            email = self.normalize_email(email)
             self.email_validator(email)
         else:
             raise ValueError(_('The Email field must be filled'))
@@ -20,12 +20,12 @@ class UserManager(BaseUserManager):
             raise ValueError(_('The First Name field must be filled'))
         if not last_name:
             raise ValueError(_('The Last Name field must be filled'))
-        user=self.model(email=email, first_name=first_name, last_name=last_name,**extra_fields)
+        user = self.model(email=email, first_name=first_name, last_name=last_name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
     
-    def create_superuser(self, email,first_name, last_name, password, **extra_fields):
+    def create_superuser(self, email, first_name, last_name, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_verified', True)
@@ -35,7 +35,6 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_('Superuser must be true to access admin'))
         
-        user = self.create_user(email,first_name, last_name, 
-                                password, **extra_fields)
+        user = self.create_user(email, first_name, last_name, password, **extra_fields)
         user.save(using=self.db)
         return user
