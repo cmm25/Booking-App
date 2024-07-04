@@ -28,4 +28,3 @@ class IsClient(BasePermission):
         return request.user.is_authenticated and request.user.is_client
 
 
-#remember to define the model to choose between above

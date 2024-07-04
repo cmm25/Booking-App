@@ -23,10 +23,11 @@ from .serializers import (
 from .permissions import IsSystemAdmin, IsHotelAdmin
 from .utils import sendOtpEmail
 
+
 class HotelViewSet(viewsets.ModelViewSet):
     queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
-    permission_classes = [IsAuthenticated, IsHotelAdmin]
+
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsHotelAdmin()]
@@ -45,14 +46,39 @@ class HotelViewSet(viewsets.ModelViewSet):
     def decline(self, request, pk=None):
         hotel = self.get_object()
         hotel.is_approved = False
+        hotel.is_declined = True
         hotel.save()
-        return Response({'status': 'hotel declined'})
+        return Response({'status': 'hotel declined'}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], permission_classes=[IsSystemAdmin])
     def pending(self, request):
-        pending_hotels = Hotel.objects.filter(is_approved=False)
+        pending_hotels = Hotel.objects.filter(is_approved=False, is_declined=False)
         serializer = self.get_serializer(pending_hotels, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+class ApprovedHotelsView(generics.ListAPIView):
+    queryset = Hotel.objects.filter(is_approved=True, is_declined=False)
+    serializer_class = HotelSerializer
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+class ApprovedHotelDetailView(generics.RetrieveAPIView):
+    queryset = Hotel.objects.filter(is_approved=True, is_declined=False)
+    serializer_class = HotelSerializer
+    permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -240,31 +266,38 @@ class LogoutUserView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-class PendingHotelListView(generics.ListAPIView):
-    queryset = Hotel.objects.filter(is_approved=False)
+class ApproveHotelView(generics.UpdateAPIView):
+    queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
-    permission_classes = [IsAuthenticated, IsSystemAdmin]
+    permission_classes = [IsSystemAdmin]
 
-class ApproveHotelView(GenericAPIView):
-    permission_classes = [IsAuthenticated, IsSystemAdmin]
+    def update(self, request, *args, **kwargs):
+        hotel = self.get_object()
+        hotel.is_approved = True
+        hotel.is_declined = False
+        hotel.save()
+        return Response({'status': 'hotel approved'}, status=status.HTTP_200_OK)
+class ApprovedHotelsView(generics.ListAPIView):
+    queryset = Hotel.objects.filter(is_approved=True)
+    serializer_class = HotelSerializer
+    permission_classes = [IsAuthenticated]
 
-    def post(self, request, pk):
-        try:
-            hotel = Hotel.objects.get(pk=pk)
-            hotel.is_approved = True
-            hotel.save()
-            return Response({'status': 'Hotel approved'}, status=status.HTTP_200_OK)
-        except Hotel.DoesNotExist:
-            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
+class DeclineHotelView(generics.UpdateAPIView):
+    queryset = Hotel.objects.all()
+    serializer_class = HotelSerializer
+    permission_classes = [IsSystemAdmin]
 
-class DeclineHotelView(GenericAPIView):
-    permission_classes = [IsAuthenticated, IsSystemAdmin]
+    def update(self, request, *args, **kwargs):
+        hotel = self.get_object()
+        hotel.is_approved = False
+        hotel.is_declined = True 
+        hotel.save()
+        return Response({'status': 'hotel declined'}, status=status.HTTP_200_OK)
 
-    def post(self, request, pk):
-        try:
-            hotel = Hotel.objects.get(pk=pk)
-            hotel.delete()
-            return Response({'status': 'Hotel declined'}, status=status.HTTP_200_OK)
-        except Hotel.DoesNotExist:
-            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class PendingHotelsView(generics.ListAPIView):
+    serializer_class = HotelSerializer
+    permission_classes = [IsSystemAdmin]
+
+    def get_queryset(self):
+        return Hotel.objects.filter(is_approved=False, is_declined=False)

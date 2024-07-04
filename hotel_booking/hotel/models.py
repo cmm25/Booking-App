@@ -17,6 +17,7 @@ class Hotel(models.Model):
     name = models.CharField(max_length=255)
     address = models.TextField()
     is_approved = models.BooleanField(default=False)
+    is_declined = models.BooleanField(default=False)
     admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hotels')
     image = models.ImageField(upload_to='hotel_images/', null=True, blank=True)
     video = models.FileField(upload_to='hotel_videos/', null=True, blank=True)
