@@ -20,4 +20,7 @@ urlpatterns = [
     path('set-new-password/', views.SetNewPassword.as_view(), name='set-new-password'),
     path('logout/', views.LogoutUserView.as_view(), name='logout'),
     path('google/', views.GoogleSignInView.as_view(), name='google'),
+    path('pending-hotels/', views.PendingHotelListView.as_view(), name='pending-hotels'),
+    path('approve-hotel/<int:pk>/',views.ApproveHotelView.as_view(), name='approve-hotel'),
+    path('decline-hotel/<int:pk>/', views.DeclineHotelView.as_view(), name='decline-hotel'),
 ]

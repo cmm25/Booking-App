@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -26,10 +26,12 @@ from .utils import sendOtpEmail
 class HotelViewSet(viewsets.ModelViewSet):
     queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
-
+    permission_classes = [IsAuthenticated, IsHotelAdmin]
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsHotelAdmin()]
+        elif self.action in ['approve', 'decline', 'pending']:
+            return [IsSystemAdmin()]
         return [IsAuthenticated()]
 
     @action(detail=True, methods=['post'], permission_classes=[IsSystemAdmin])
@@ -46,6 +48,11 @@ class HotelViewSet(viewsets.ModelViewSet):
         hotel.save()
         return Response({'status': 'hotel declined'})
 
+    @action(detail=False, methods=['get'], permission_classes=[IsSystemAdmin])
+    def pending(self, request):
+        pending_hotels = Hotel.objects.filter(is_approved=False)
+        serializer = self.get_serializer(pending_hotels, many=True)
+        return Response(serializer.data)
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -104,7 +111,7 @@ class FinanceReportViewSet(viewsets.ModelViewSet):
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsHotelAdmin]
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -174,7 +181,9 @@ class LoginUserView(GenericAPIView):
         response_data = {
             "email": serializer.validated_data['email'],
             "full_name": serializer.validated_data['full_name'],
-            "role": serializer.validated_data['role']
+            "role": serializer.validated_data['role'],
+            "access_token": serializer.validated_data['access_token'],
+            "refresh_token": serializer.validated_data['refresh_token'],
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
@@ -231,3 +240,31 @@ class LogoutUserView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+class PendingHotelListView(generics.ListAPIView):
+    queryset = Hotel.objects.filter(is_approved=False)
+    serializer_class = HotelSerializer
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+class ApproveHotelView(GenericAPIView):
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+    def post(self, request, pk):
+        try:
+            hotel = Hotel.objects.get(pk=pk)
+            hotel.is_approved = True
+            hotel.save()
+            return Response({'status': 'Hotel approved'}, status=status.HTTP_200_OK)
+        except Hotel.DoesNotExist:
+            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class DeclineHotelView(GenericAPIView):
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+    def post(self, request, pk):
+        try:
+            hotel = Hotel.objects.get(pk=pk)
+            hotel.delete()
+            return Response({'status': 'Hotel declined'}, status=status.HTTP_200_OK)
+        except Hotel.DoesNotExist:
+            return Response({'error': 'Hotel not found'}, status=status.HTTP_404_NOT_FOUND)
