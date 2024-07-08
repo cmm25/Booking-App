@@ -26,6 +26,8 @@ class Hotel(models.Model):
         return self.name
 
 class RoomCategory(models.Model):
+    
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_categories', default=0)
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
