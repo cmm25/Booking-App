@@ -39,6 +39,20 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = '__all__'
+        read_only_fields = ['user'] 
+
+    def validate(self, data):
+        room = data['room']
+        if not room.is_available:
+            raise serializers.ValidationError("This room is not available.")
+        return data
+
+    def create(self, validated_data):
+        room = validated_data['room']
+        booking = Booking.objects.create(**validated_data)
+        room.is_available = False
+        room.save()
+        return booking
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)

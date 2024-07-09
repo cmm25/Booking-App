@@ -26,24 +26,22 @@ class Hotel(models.Model):
         return self.name
 
 class RoomCategory(models.Model):
-    
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='room_categories', default=0)
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.name
-
 class Room(models.Model):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name='rooms')
     category = models.ForeignKey(RoomCategory, on_delete=models.CASCADE, related_name='rooms')
     number = models.CharField(max_length=10)
+    is_available = models.BooleanField(default=True)
     image = models.ImageField(upload_to='room_images/', null=True, blank=True)
     video = models.FileField(upload_to='room_videos/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.hotel.name} - {self.number} - {self.category.name}"
-
 class Booking(models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('RESERVED', 'Reserved'),
@@ -60,6 +58,16 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.room.hotel.name} - {self.room.category.name}"
+
+    def save(self, *args, **kwargs):
+        # Ensure room availability is updated when booking status changes
+        if self.payment_status == 'RESERVED':
+            self.room.is_available = False
+        elif self.payment_status == 'CANCELLED':
+            self.room.is_available = True
+        self.room.save()
+        super().save(*args, **kwargs)
+
 
 class Review(models.Model):
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews')
@@ -112,6 +120,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             'refresh': str(refresh),
             'access': str(refresh.access_token)
         }
+
 class OneTimePassword(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     code = models.CharField(max_length=6, unique=True)

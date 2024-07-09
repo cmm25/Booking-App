@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from rest_framework.generics import GenericAPIView
-from .models import Hotel, Review, FinanceReport, Room, Booking, User
 from .serializers import PasswordResetSerializer, SetNewPasswordSerializer, RoomCategorySerializer, HotelSerializer, UserRegistrationSerializer, ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer, LoginSerializer
 from .permissions import IsSystemAdmin, IsHotelAdmin
 from .utils import sendOtpEmail
@@ -188,6 +187,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         if user.is_hotel_admin:
             return Room.objects.filter(hotel__admin=user, hotel__is_approved=True)
         return Room.objects.none()
+
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
@@ -198,12 +198,15 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Booking.objects.all()
         return Booking.objects.filter(user=self.request.user)
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
     @action(detail=True, methods=['post'])
     def pay(self, request, pk=None):
         booking = self.get_object()
         payment_amount = request.data.get('payment_amount')
         if payment_amount and float(payment_amount) >= booking.room.category.price:
-            booking.payment_status = 'paid'
+            booking.payment_status = 'PAID'
             booking.save()
             return Response({'status': 'payment successful'}, status=status.HTTP_200_OK)
         return Response({'status': 'insufficient payment amount'}, status=status.HTTP_400_BAD_REQUEST)
@@ -211,9 +214,11 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         booking = self.get_object()
-        if booking.payment_status == 'reserved' and booking.user == request.user:
-            booking.payment_status = 'cancelled'
+        if booking.payment_status == 'RESERVED' and booking.user == request.user:
+            booking.payment_status = 'CANCELLED'
             booking.save()
+            booking.room.is_available = True
+            booking.room.save()
             return Response({'status': 'reservation cancelled'}, status=status.HTTP_200_OK)
         return Response({'status': 'cancellation not allowed'}, status=status.HTTP_400_BAD_REQUEST)
 class RegisterUserView(GenericAPIView):
