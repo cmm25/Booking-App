@@ -14,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 class HotelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hotel
-        fields = ['name', 'address']
+        fields = ['name', 'address','id']
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review

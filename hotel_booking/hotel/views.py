@@ -36,10 +36,16 @@ class HotelViewSet(viewsets.ModelViewSet):
             return [IsSystemAdmin()]
         return [IsAuthenticated()]
 
+    def perform_create(self, serializer):
+        # Assign admin based on the authenticated user
+        admin = self.request.user
+        serializer.save(admin=admin)
+
     @action(detail=True, methods=['post'], permission_classes=[IsSystemAdmin])
     def approve(self, request, pk=None):
         hotel = self.get_object()
         hotel.is_approved = True
+        hotel.is_declined = False
         hotel.save()
         return Response({'status': 'hotel approved'})
 
@@ -57,9 +63,14 @@ class HotelViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(pending_hotels, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 class ApprovedHotelsView(generics.ListAPIView):
-    queryset = Hotel.objects.filter(is_approved=True, is_declined=False)
     serializer_class = HotelSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Hotel.objects.filter(is_approved=True, is_declined=False)
+        # Optionally, filter only hotels with rooms if needed
+        queryset = queryset.filter(rooms__isnull=False).distinct()
+        return queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -67,18 +78,19 @@ class ApprovedHotelsView(generics.ListAPIView):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
 class ApprovedHotelDetailView(generics.RetrieveAPIView):
     queryset = Hotel.objects.filter(is_approved=True, is_declined=False)
     serializer_class = HotelSerializer
-    permission_classes = [IsAuthenticated,IsHotelAdmin]
+    permission_classes = [IsAuthenticated, IsHotelAdmin]
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
 class RoomCategoryViewSet(viewsets.ModelViewSet):
     queryset = RoomCategory.objects.all()
     serializer_class = RoomCategorySerializer
@@ -89,6 +101,15 @@ class RoomCategoryViewSet(viewsets.ModelViewSet):
         if user.is_hotel_admin:
             return RoomCategory.objects.filter(hotel__admin=user, hotel__is_approved=True)
         return RoomCategory.objects.none()
+
+class AvailableRoomsView(generics.ListAPIView):
+    serializer_class = RoomSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        hotel_id = self.request.query_params.get('hotel_id')
+        queryset = Room.objects.filter(hotel_id=hotel_id, is_available=True)
+        return queryset
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
@@ -293,29 +314,6 @@ class LogoutUserView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-class ApproveHotelView(generics.UpdateAPIView):
-    queryset = Hotel.objects.all()
-    serializer_class = HotelSerializer
-    permission_classes = [IsSystemAdmin]
-
-    def update(self, request, *args, **kwargs):
-        hotel = self.get_object()
-        hotel.is_approved = True
-        hotel.is_declined = False
-        hotel.save()
-        return Response({'status': 'hotel approved'}, status=status.HTTP_200_OK)
-class DeclineHotelView(generics.UpdateAPIView):
-    queryset = Hotel.objects.all()
-    serializer_class = HotelSerializer
-    permission_classes = [IsSystemAdmin]
-
-    def update(self, request, *args, **kwargs):
-        hotel = self.get_object()
-        hotel.is_approved = False
-        hotel.is_declined = True 
-        hotel.save()
-        return Response({'status': 'hotel declined'}, status=status.HTTP_200_OK)
-
 
 class PendingHotelsView(generics.ListAPIView):
     serializer_class = HotelSerializer
@@ -324,10 +322,4 @@ class PendingHotelsView(generics.ListAPIView):
     def get_queryset(self):
         return Hotel.objects.filter(is_approved=False, is_declined=False)
     
-
-
-# class ApprovedHotelsView(generics.ListAPIView):
-#     queryset = Hotel.objects.filter(is_approved=True)
-#     serializer_class = HotelSerializer
-#     permission_classes = [IsAuthenticated]
 
