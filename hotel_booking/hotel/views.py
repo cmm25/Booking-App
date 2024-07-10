@@ -12,7 +12,6 @@ from .models import OneTimePassword
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-
 from .models import Hotel, Review, FinanceReport, Room, Booking, User, OneTimePassword,RoomCategory
 from .serializers import (
     GoogleSignInSerializer, PasswordResetSerializer, LogoutUserSerializer,

@@ -1,4 +1,7 @@
 import random
+import datetime
+import base64
+import requests
 from django.core.mail import EmailMessage
 from .models import User, OneTimePassword
 from django.conf import settings
@@ -7,6 +10,41 @@ from google.oauth2 import id_token
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 
+# def generate_mpesa_token():
+#     auth_url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate'
+#     consumer_key = settings.MPESA_CONSUMER_KEY
+#     consumer_secret = settings.MPESA_CONSUMER_SECRET
+
+#     headers = {
+#         'Authorization': f'Basic {base64.b64encode(f"{consumer_key}:{consumer_secret}".encode()).decode()}',
+#         'Content-Type': 'application/json'
+#     }
+
+#     try:
+#         response = requests.get(auth_url, headers=headers)
+#         response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+#         access_token = response.json()['access_token']
+#         return access_token
+#     except requests.exceptions.RequestException as e:
+#         # Handle request exceptions or specific errors here
+#         print(f"Error in generating MPESA token: {e}")
+#         return None
+
+# def make_stk_payment():
+#     mpesa_url = 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
+#     headers = {
+#         'Authorization': f'Bearer {generate_mpesa_token()}',
+#         'Content-Type': 'application/json'
+#     }
+
+#     try:
+#         response = requests.post(mpesa_url, headers=headers, json={})
+#         response.raise_for_status()  
+#         return response.json()
+#     except requests.exceptions.RequestException as e:
+#         # Handle request exceptions or specific errors here
+#         print(f"Error in making STK payment request: {e}")
+#         return None
 def generateOtp():
     OTP = ''.join([str(random.randint(1, 9)) for _ in range(6)])
     return OTP
@@ -52,6 +90,7 @@ class Google():
         except ValueError as e:
             raise AuthenticationFailed('Invalid token')
 
+
 def login_social_user (email, password):
      user = authenticate(email = email, password = password)
      user_tokens = user.tokens()
@@ -83,3 +122,4 @@ def register_social_user(provider, email, first_name, last_name):
         register_user.is_verified = True
         register_user.save()
         login_social_user(email = register_user.email,password = settings.SOCIAL_AUTH_PASSWORD)
+
