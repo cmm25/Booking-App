@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Hotel, Review, FinanceReport, Room, Booking, RoomCategory, ROLE_CHOICES
+from .models import User, Hotel, Review, FinanceReport, Room, Booking, RoomCategory, ROLE_CHOICES, OneTimePassword
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import authenticate
 from django.conf import settings
@@ -203,3 +203,17 @@ class GoogleSignInSerializer(serializers.Serializer):
         provider = 'google'
         
         return register_social_user(provider, email, first_name, last_name)
+
+class OneTimePasswordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OneTimePassword
+        fields = ['code', 'user']  
+    def create(self, validated_data):
+        return OneTimePassword.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.code = validated_data.get('code', instance.code)
+        instance.user = validated_data.get('user', instance.user)
+        instance.expiry_time = validated_data.get('expiry_time', instance.expiry_time)
+        instance.save()
+        return instance

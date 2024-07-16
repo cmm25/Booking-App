@@ -17,10 +17,11 @@ from .serializers import (
     GoogleSignInSerializer, PasswordResetSerializer, LogoutUserSerializer,
     SetNewPasswordSerializer, HotelSerializer, UserRegistrationSerializer,
     ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer,
-    LoginSerializer
+    LoginSerializer,OneTimePassword
 )
 from .permissions import IsSystemAdmin, IsHotelAdmin
 from .utils import sendOtpEmail
+from django.shortcuts import get_object_or_404
 
 
 class HotelViewSet(viewsets.ModelViewSet):
@@ -233,20 +234,27 @@ class RegisterUserView(GenericAPIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class VerifyUserEmail(GenericAPIView):
     def post(self, request):
         otp_code = request.data.get('otp')
+        
+        if not otp_code:
+            return Response({'status': 'OTP code is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            user_code = OneTimePassword.objects.get(code=otp_code)
+            user_code = get_object_or_404(OneTimePassword, code=otp_code)
             user = user_code.user
             if not user.is_verified:
                 user.is_verified = True
                 user.save()
                 return Response({'status': 'Email verified successfully'}, status=status.HTTP_200_OK)
-            return Response({'status': 'Email already verified'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'status': 'Email already verified'}, status=status.HTTP_200_OK)
+        
         except OneTimePassword.DoesNotExist:
-            return Response({'status': 'Passcode not provided'}, status=status.HTTP_404_NOT_FOUND)
-
+            return Response({'status': 'Invalid or missing OTP code'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'status': 'An error occurred', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class LoginUserView(GenericAPIView):
     serializer_class = LoginSerializer
 
