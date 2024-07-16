@@ -214,6 +214,5 @@ class VerifyUserEmailSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.code = validated_data.get('code', instance.code)
         instance.user = validated_data.get('user', instance.user)
-        instance.expiry_time = validated_data.get('expiry_time', instance.expiry_time)
         instance.save()
         return instance
