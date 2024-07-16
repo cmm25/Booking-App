@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: hotel-booking
+    name: hotel_booking
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn hotel_booking.wsgi:application --bind 0.0.0.0:$PORT
