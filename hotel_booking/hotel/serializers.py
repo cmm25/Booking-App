@@ -208,6 +208,7 @@ class VerifyUserEmailSerializer(serializers.ModelSerializer):
     class Meta:
         model = OneTimePassword
         fields = ['code', 'user']  
+
     def create(self, validated_data):
         return OneTimePassword.objects.create(**validated_data)
 
