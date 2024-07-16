@@ -24,7 +24,7 @@ DEBUG = env('DEBUG')
 # Specify the port
 PORT = int(os.environ.get("PORT", 8000))
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']  # Add your domain when deploying
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '.onrender.com']
 
 # Application definition
 INSTALLED_APPS = [
