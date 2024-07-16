@@ -1,4 +1,5 @@
 import environ
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -20,7 +21,10 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+# Specify the port
+PORT = int(os.environ.get("PORT", 8000))
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']  # Add your domain when deploying
 
 # Application definition
 INSTALLED_APPS = [
@@ -33,10 +37,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'hotel',
     'corsheaders',
+    'whitenoise.runserver_nostatic',  # Add this for static files in production
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add this for static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -91,8 +97,6 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = "hotel.User"
 
 # Password validation
-# https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -109,24 +113,17 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
-
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email configuration
@@ -140,40 +137,30 @@ EMAIL_PORT = '2525'
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
 SOCIAL_AUTH_PASSWORD = env('SOCIAL_AUTH_PASSWORD')
-# MPESA_ENVIRONMENT = 'sandbox'
 
-# # Credentials for the daraja app
-# MPESA_CONSUMER_KEY = env.str('MPESA_CONSUMER_KEY', default='default_value_if_not_found')
-# MPESA_CONSUMER_SECRET = env.str('MPESA_CONSUMER_SECRET')
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 
+# CORS settings (if needed)
+CORS_ALLOW_ALL_ORIGINS = True  # Set to False and use CORS_ALLOWED_ORIGINS in production
 
-# #Shortcode to use for transactions. For sandbox  use the Shortcode 1 provided on test credentials page
-
-# MPESA_SHORTCODE = env('MPESA_SHORTCODE')
-
-# # Shortcode to use for Lipa na MPESA Online (MPESA Express) transactions
-# # This is only used on sandbox, do not set this variable in production
-# # For sandbox use the Lipa na MPESA Online Shorcode provided on test credentials page
-
-# MPESA_EXPRESS_SHORTCODE = env('MPESA_EXPRESS_SHORTCODE')
-
-# # Type of shortcode
-# # Possible values:
-# # - paybill (For Paybill)
-# # - till_number (For Buy Goods Till Number)
-
-# MPESA_SHORTCODE_TYPE = 'paybill'
-
-# # Lipa na MPESA Online passkey
-# # Sandbox passkey is available on test credentials page
-# # Production passkey is sent via email once you go live
-
-# MPESA_PASSKEY = env('MPESA_PASSKEY')
-
-# # Username for initiator (to be used in B2C, B2B, AccountBalance and TransactionStatusQuery Transactions)
-
-# MPESA_INITIATOR_USERNAME = 'testapi'
-
-# # Plaintext password for initiator (to be used in B2C, B2B, AccountBalance and TransactionStatusQuery Transactions)
-
-# MPESA_INITIATOR_SECURITY_CREDENTIAL = env('MPESA_INITIATOR_SECURITY_CREDENTIAL')
+# Security settings for production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'

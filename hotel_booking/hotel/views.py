@@ -222,7 +222,6 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Response({'status': 'cancellation not allowed'}, status=status.HTTP_400_BAD_REQUEST)
 class RegisterUserView(GenericAPIView):
     serializer_class = UserRegistrationSerializer
-
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
