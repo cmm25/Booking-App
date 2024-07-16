@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from rest_framework.generics import GenericAPIView
-from .serializers import PasswordResetSerializer, SetNewPasswordSerializer, RoomCategorySerializer, HotelSerializer, UserRegistrationSerializer, ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer, LoginSerializer
+from .serializers import PasswordResetSerializer, VerifyUserEmailSerializer, SetNewPasswordSerializer, RoomCategorySerializer, HotelSerializer, UserRegistrationSerializer, ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer, LoginSerializer
 from .permissions import IsSystemAdmin, IsHotelAdmin
 from .utils import sendOtpEmail
 from .models import OneTimePassword
@@ -236,6 +236,7 @@ class RegisterUserView(GenericAPIView):
 
 
 class VerifyUserEmail(GenericAPIView):
+    serializer_class = VerifyUserEmailSerializer
     def post(self, request):
         otp_code = request.data.get('otp')
         
