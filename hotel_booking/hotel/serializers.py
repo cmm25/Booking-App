@@ -204,7 +204,7 @@ class GoogleSignInSerializer(serializers.Serializer):
         
         return register_social_user(provider, email, first_name, last_name)
 
-class OneTimePasswordSerializer(serializers.ModelSerializer):
+class VerifyUserEmailSerializer(serializers.ModelSerializer):
     class Meta:
         model = OneTimePassword
         fields = ['code', 'user']  
