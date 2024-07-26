@@ -14,7 +14,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-ALLOWED_HOSTS = ['207.154.236.6']
+ALLOWED_HOSTS = ['207.154.236.6', 'bookingapp.me']
+
 
 
 # Application definition
