@@ -26,5 +26,6 @@ urlpatterns = [
     path('decline-hotel/<int:pk>/', views.HotelViewSet.as_view({'post': 'decline'}), name='decline-hotel'),
     path('approved-hotels/', views.ApprovedHotelsView.as_view(), name='approved-hotels'),
     path('approved-hotels/<int:pk>/', views.ApprovedHotelDetailView.as_view(), name='approved-hotel-detail'),
-    path('available-rooms/',views.AvailableRoomsView.as_view(),name='available-rooms')
+    path('available-rooms/', views.AvailableRoomsView.as_view(), name='available-rooms'),
+    path('send-test-email/', views.send_test_email, name='send_test_email')
 ]

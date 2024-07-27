@@ -24,8 +24,13 @@ DEBUG = env('DEBUG')
 # Specify the port
 PORT = int(os.environ.get("PORT", 8000))
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '207.154.236.6']
+if DEBUG:  # Assuming DEBUG is True for local development
+    SITE_DOMAIN = 'http://127.0.0.1:8000/'
+else:
+    SITE_DOMAIN = 'http://207.154.236.6/'
 
+DEFAULT_FROM_EMAIL = 'craigmutugi.com'
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -127,11 +132,13 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # For Gmail
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-EMAIL_PORT = '2525'
+DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
 
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
@@ -157,10 +164,10 @@ LOGGING = {
 CORS_ALLOW_ALL_ORIGINS = True  # Set to False and use CORS_ALLOWED_ORIGINS in production
 
 # Security settings for production
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
+# if not DEBUG:
+#     SECURE_SSL_REDIRECT = True
+#     SESSION_COOKIE_SECURE = True
+#     CSRF_COOKIE_SECURE = True
+#     SECURE_BROWSER_XSS_FILTER = True
+#     SECURE_CONTENT_TYPE_NOSNIFF = True
+#     X_FRAME_OPTIONS = 'DENY'

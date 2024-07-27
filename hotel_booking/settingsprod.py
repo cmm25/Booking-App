@@ -15,6 +15,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', '')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 ALLOWED_HOSTS = ['207.154.236.6']
+SITE_DOMAIN = 'http://207.154.236.6/'
+DEFAULT_FROM_EMAIL = 'craigmutugi.com'
 
 
 # Application definition
@@ -112,11 +114,12 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email configuration
+EMAIL_HOST = 'smtp.gmail.com'  # For Gmail
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-EMAIL_PORT = '2525'
+DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER')
 
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')

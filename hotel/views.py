@@ -1,7 +1,13 @@
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
 from rest_framework.response import Response
+from django.core.mail import send_mail
+from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from rest_framework.generics import GenericAPIView
@@ -335,3 +341,17 @@ class PendingHotelsView(generics.ListAPIView):
         return Hotel.objects.filter(is_approved=False, is_declined=False)
     
 
+
+@csrf_exempt
+def send_test_email(request):
+    try:
+        email = EmailMessage(
+            subject='Test Email',
+            body='This is a test email.',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=['craigmutugi@gmail.com']
+        )
+        email.send(fail_silently=False)
+        return HttpResponse('Email sent successfully')
+    except Exception as e:
+        return HttpResponse(f'Error sending email: {str(e)}', status=500)

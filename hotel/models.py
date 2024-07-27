@@ -1,3 +1,4 @@
+from datetime import timedelta 
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -122,8 +123,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         }
 
 class OneTimePassword(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    code = models.CharField(max_length=6, unique=True)
-
-    def __str__(self):
-        return f"{self.user.first_name} - passcode"
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(default=timezone.now)  
+    def is_valid(self):
+        expiration_time = self.created_at + timedelta(minutes=10)
+        return timezone.now() <= expiration_time
