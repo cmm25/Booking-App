@@ -23,7 +23,7 @@ from .serializers import (
     GoogleSignInSerializer, PasswordResetSerializer, LogoutUserSerializer,
     SetNewPasswordSerializer, HotelSerializer, UserRegistrationSerializer,
     ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer,
-    LoginSerializer,OneTimePassword
+    LoginSerializer,OneTimePassword,DeleteAccountSerializer
 )
 from .permissions import IsSystemAdmin, IsHotelAdmin
 from .utils import sendOtpEmail
@@ -355,3 +355,19 @@ def send_test_email(request):
         return HttpResponse('Email sent successfully')
     except Exception as e:
         return HttpResponse(f'Error sending email: {str(e)}', status=500)
+    
+
+class DeleteAccountView(GenericAPIView):
+    serializer_class = DeleteAccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = request.user
+        user.delete()
+        
+        return Response({
+            'message': 'Your account has been successfully deleted.'
+        }, status=status.HTTP_200_OK)

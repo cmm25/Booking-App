@@ -217,3 +217,19 @@ class VerifyUserEmailSerializer(serializers.ModelSerializer):
         instance.user = validated_data.get('user', instance.user)
         instance.save()
         return instance
+
+class DeleteAccountSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(max_length=68, min_length=6, write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['password']
+
+    def validate(self, attrs):
+        password = attrs.get('password', '')
+        user = self.context['request'].user
+        
+        if not user.check_password(password):
+            raise serializers.ValidationError('Incorrect password, please try again')
+        
+        return attrs

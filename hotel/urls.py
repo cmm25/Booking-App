@@ -27,5 +27,6 @@ urlpatterns = [
     path('approved-hotels/', views.ApprovedHotelsView.as_view(), name='approved-hotels'),
     path('approved-hotels/<int:pk>/', views.ApprovedHotelDetailView.as_view(), name='approved-hotel-detail'),
     path('available-rooms/', views.AvailableRoomsView.as_view(), name='available-rooms'),
-    path('send-test-email/', views.send_test_email, name='send_test_email')
+    path('send-test-email/', views.send_test_email, name='send_test_email'),
+    path('delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),  
 ]
