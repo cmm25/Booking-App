@@ -191,6 +191,10 @@ We welcome contributions from the developer community. To contribute:
 
 This project is licensed under the MIT License. For full details, please refer to the [LICENSE](LICENSE) file in the repository.
 
+
+## Backend Link
+The backend of the Hotel Management System can be accessed [here](http://207.154.236.6/api/).
+
 ---
 
 This revised README reflects the 5-week development timeline, the use of MySQL, and includes information about the database design process using flowcharts. It provides a comprehensive overview of your Hotel Management System, highlighting its features and development process in a manner suitable for a rapidly developed, yet robust application.
