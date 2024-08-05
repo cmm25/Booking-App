@@ -193,7 +193,7 @@ This project is licensed under the MIT License. For full details, please refer t
 
 
 ## Backend Link
-The backend of the Hotel Management System can be accessed [here](http://207.154.236.6/api/).
+The backend of the Hotel Management System can be accessed [here](http://207.154.236.6/). Deployed on a Digital Ocean Droplet. Use Postman to interact the backend.
 
 ---
 
