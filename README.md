@@ -1,6 +1,6 @@
 # Hotel Management System
 
-## Executive Summary
+## Summary
 The Hotel Management System is a comprehensive solution designed to streamline hotel operations, developed over an intensive 5-week period. This system offers robust functionality for booking management, room allocation, and user administration. Built on Django and Django REST Framework, our platform efficiently meets the needs of modern hospitality businesses.
 
 ## Table of Contents
