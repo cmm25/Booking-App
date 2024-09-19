@@ -1,33 +1,49 @@
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.generics import GenericAPIView
+
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
-from rest_framework.response import Response
-from django.core.mail import send_mail
-from django.http import HttpResponse
-from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from rest_framework.generics import GenericAPIView
-from .serializers import PasswordResetSerializer, VerifyUserEmailSerializer, SetNewPasswordSerializer, RoomCategorySerializer, HotelSerializer, UserRegistrationSerializer, ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer, LoginSerializer
-from .permissions import IsSystemAdmin, IsHotelAdmin
-from .utils import sendOtpEmail
-from .models import OneTimePassword
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from .models import Hotel, Review, FinanceReport, Room, Booking, User, OneTimePassword,RoomCategory
-from .serializers import (
-    GoogleSignInSerializer, PasswordResetSerializer, LogoutUserSerializer,
-    SetNewPasswordSerializer, HotelSerializer, UserRegistrationSerializer,
-    ReviewSerializer, FinanceReportSerializer, RoomSerializer, BookingSerializer,
-    LoginSerializer,OneTimePassword,DeleteAccountSerializer
-)
+from django.shortcuts import get_object_or_404
+
 from .permissions import IsSystemAdmin, IsHotelAdmin
 from .utils import sendOtpEmail
-from django.shortcuts import get_object_or_404
+from .models import (
+    Hotel,
+    Review,
+    FinanceReport,
+    Room,
+    Booking,
+    User,
+    OneTimePassword,
+    RoomCategory
+)
+from .serializers import (
+    GoogleSignInSerializer,
+    PasswordResetSerializer,
+    LogoutUserSerializer,
+    SetNewPasswordSerializer,
+    HotelSerializer,
+    UserRegistrationSerializer,
+    ReviewSerializer,
+    FinanceReportSerializer,
+    RoomSerializer,
+    BookingSerializer,
+    RoomCategorySerializer,
+    LoginSerializer,
+    DeleteAccountSerializer,
+    VerifyUserEmailSerializer
+)
+
 
 
 class HotelViewSet(viewsets.ModelViewSet):
@@ -188,11 +204,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         if user.is_hotel_admin:
             return Room.objects.filter(hotel__admin=user, hotel__is_approved=True)
         return Room.objects.none()
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_hotel_admin:
-            return Room.objects.filter(hotel__admin=user, hotel__is_approved=True)
-        return Room.objects.none()
+
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -269,7 +281,7 @@ class LoginUserView(GenericAPIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         
-        # Extract relevant data from serializer.validated_data
+        
         response_data = {
             "email": serializer.validated_data['email'],
             "full_name": serializer.validated_data['full_name'],

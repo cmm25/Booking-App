@@ -1,7 +1,5 @@
 import secrets
 import logging
-import base64
-import requests
 from django.core.mail import EmailMessage
 from django.conf import settings
 from google.auth.transport import requests as google_requests
@@ -100,7 +98,7 @@ def register_social_user(provider, email, first_name, last_name):
     user = User.objects.filter(email=email)
     if user.exists():
         if provider == user[0].auth_provider:
-           return login_social_user(email, settings.SOCIAL_AUTH_PASSWORD)
+            return login_social_user(email, settings.SOCIAL_AUTH_PASSWORD)
         else:
             raise AuthenticationFailed(
                 detail=f"Please continue login with {user[0].auth_provider}"

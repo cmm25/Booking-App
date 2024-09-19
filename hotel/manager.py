@@ -5,19 +5,12 @@ from django.core.validators import validate_email
 
 class UserManager(BaseUserManager):
     def email_validator(self, email):
-        """
-        Validate the email address using Django's built-in validator.
-        Raise ValueError if the email is invalid.
-        """
         try:
             validate_email(email)
         except ValidationError:
             raise ValueError(_('Invalid email address'))
         
     def create_user(self, email, first_name, last_name, password, **extra_fields):
-        """
-        Create and save a regular user with the given email, first name, last name, and password.
-        """
         if email:
             email = self.normalize_email(email)
             self.email_validator(email)
@@ -35,10 +28,6 @@ class UserManager(BaseUserManager):
         return user
     
     def create_superuser(self, email, first_name, last_name, password, **extra_fields):
-        """
-        Create and save a superuser with the given email, first name, last name, and password.
-        """
-        # Set default values for superuser fields
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_verified', True)
