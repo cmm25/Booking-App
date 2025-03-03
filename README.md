@@ -171,5 +171,3 @@ We welcome contributions from the developer community. To contribute:
 This project is licensed under the MIT License. For full details, please take a look at the [LICENSE](LICENSE) file in the repository.
 
 ---
-
-This revised README reflects the 5-week development timeline, the use of MySQL, and includes information about the database design process using flowcharts. It provides a comprehensive overview of your Hotel Management System, highlighting its features and development process in a manner suitable for a rapidly developed, yet robust application.
