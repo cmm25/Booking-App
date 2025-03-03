@@ -55,8 +55,7 @@ This thorough planning ensured a robust foundation for the system's data archite
 ### System Requirements
 - Python 3.8 or higher
 - MySQL 8.0 or higher
-- Virtual Environment Manager (venv recommended)
-
+- Virtual Environment Manager
 ### Installation Process
 1. **Repository Initialization:**
     ```sh
