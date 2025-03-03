@@ -43,7 +43,6 @@
 - **Backend Framework:** Django 3.2+, Django REST Framework 3.12+
 - **Authentication Mechanism:** JSON Web Tokens (JWT)
 - **Database Management:** MySQL 8.0+
-- **Development Environment:** Replit
 - **API Testing:** Postman
 
 ## Database Design
