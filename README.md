@@ -7,8 +7,6 @@
 - [Deployment and Configuration](#deployment-and-configuration)
 - [API Documentation](#api-documentation)
 - [User Role Specifications](#user-role-specifications)
-- [Project Timeline](#project-timeline)
-- [Development Insights](#development-insights)
 - [Contribution Guidelines](#contribution-guidelines)
 - [Licensing Information](#licensing-information)
 
