@@ -1,8 +1,5 @@
 # Hotel Management System
 
-## Summary
-The Hotel Management System is a comprehensive solution designed to streamline hotel operations, developed over an intensive 5-week period. This system offers robust functionality for booking management, room allocation, and user administration. Built on Django and Django REST Framework, our platform efficiently meets the needs of modern hospitality businesses.
-
 ## Table of Contents
 - [Core Functionalities](#core-functionalities)
 - [Technical Architecture](#technical-architecture)
@@ -162,21 +159,6 @@ Our RESTful API adheres to industry standards. Key endpoints include:
 - Hotel listing moderation
 - System oversight and maintenance
 
-## Project Timeline
-This project was completed in an intensive 5-week development cycle:
-- **Week 1:** Project initiation, requirement gathering, and database design
-- **Week 2:** Core backend development and API design
-- **Week 3:** User authentication and role-based access control implementation
-- **Week 4:** Hotel, room, and booking management features development
-- **Week 5:** Review system integration, financial reporting, and final testing
-
-## Development Insights
-The rapid development of this Hotel Management System provided valuable experience in:
-- Agile development methodologies for quick iteration
-- Efficient database design and implementation using MySQL
-- Integration of Django with REST Framework for robust API development
-- Implementation of secure authentication using JWT
-- Leveraging Replit for collaborative development and rapid prototyping
 
 ## Contribution Guidelines
 We welcome contributions from the developer community. To contribute:
@@ -189,7 +171,7 @@ We welcome contributions from the developer community. To contribute:
 
 ## Licensing Information
 
-This project is licensed under the MIT License. For full details, please refer to the [LICENSE](LICENSE) file in the repository.
+This project is licensed under the MIT License. For full details, please take a look at the [LICENSE](LICENSE) file in the repository.
 
 ---
 
